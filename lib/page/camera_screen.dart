@@ -19,7 +19,6 @@ class _CameraScreenState extends State<CameraScreen> {
   //Volume
   double currentvol = 0;
   double currentTouch = 0;
-  String buttontype = "none";
 
   @override
   void dispose() {
@@ -32,14 +31,21 @@ class _CameraScreenState extends State<CameraScreen> {
     super.initState();
     _initCamera();
     PerfectVolumeControl.stream.listen((volume) {
+
       if(volume != currentvol){ //only execute button type check once time
-        if(volume > currentvol){ //if n
-            currentTouch = currentTouch + 1;
+        if(volume > currentvol){
+          currentTouch = currentTouch + 1;
         }else{ //else it is down button
           // buttontype = "down";
         }
       }
-      if(currentTouch == 3) {
+      if(currentTouch > 1) {
+        //Stop Record || File for Open record video now not been used
+        final file = _cameraController.stopVideoRecording();
+        setState(() {
+          isRecording = false;
+          currentTouch = 0;
+        });
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const MyHomePage(title: 'Test Flutter')),
@@ -59,18 +65,31 @@ class _CameraScreenState extends State<CameraScreen> {
     final front = cameras.firstWhere((camera) =>
     camera.lensDirection == CameraLensDirection.back);
     _cameraController = CameraController(front, ResolutionPreset.max);
-    await _cameraController.initialize().then((_) {
-      if (!mounted) {
+    await _cameraController.initialize().then((_) async {
+      if (mounted) {
+        await _cameraController.prepareForVideoRecording();
+        await _cameraController.startVideoRecording();
+        isRecording = true;
+        setState(() {
+
+        });
+        return;
+      } else {
         return;
       }
-      setState(() {});
+      // setState(() {});
     }).catchError((Object e) {
       if (e is CameraException) {
         switch (e.code) {
           case 'CameraAccessDenied':
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const MyHomePage(title: 'Test Flutter')),
+            );
           // Handle access errors here.
             break;
           default:
+
           // Handle other errors here.
             break;
         }
@@ -79,21 +98,17 @@ class _CameraScreenState extends State<CameraScreen> {
     setState(() => isLoading = false);
   }
 
-  _recordVideo() async {
-    if (isRecording) {
-      //Stop Record || File for Open record video now not been used
-      final file = await _cameraController.stopVideoRecording();
-      setState(() => isRecording = false);
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const MyHomePage(title: 'Test Flutter')),
-      );
-    } else {
-      await _cameraController.prepareForVideoRecording();
-      await _cameraController.startVideoRecording();
-      setState(() => isRecording = true);
-    }
-  }
+  // _recordVideo() async {
+  //   if (isRecording) {
+  //     //Stop Record || File for Open record video now not been used
+  //     final file = await _cameraController.stopVideoRecording();
+  //     setState(() => isRecording = false);
+  //   } else {
+  //     await _cameraController.prepareForVideoRecording();
+  //     await _cameraController.startVideoRecording();
+  //     setState(() => isRecording = true);
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -112,20 +127,9 @@ class _CameraScreenState extends State<CameraScreen> {
           alignment: Alignment.bottomCenter,
           children: [
             CameraPreview(_cameraController),
-            Padding(
-              padding: const EdgeInsets.all(25),
-              child: FloatingActionButton(
-                backgroundColor: Colors.red,
-                child: Icon(isRecording ? Icons.stop : Icons.circle),
-                onPressed: () => _recordVideo(),
-              ),
-            ),
           ],
         ),
       );
-
-
     }
-
   }
 }
