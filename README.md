@@ -1,5 +1,10 @@
 # test_flutter
 
+#Envoirment
+Flutter 3.3.10
+minsdk 21
+Andoid API 33
+
 Test Flutter camera and input
 
 ## Getting Started
